@@ -114,10 +114,11 @@ Item {
 
         function update(): void {
             if (root.isGif) {
-                if (gifImage.source == root.source)
+                const url = "file://" + root.source;
+                if (gifImage.source == url)
                     root.current = this;
                 else
-                    gifImage.source = root.source;
+                    gifImage.source = url;
             } else {
                 if (cachedImage.path === root.source)
                     root.current = this;
