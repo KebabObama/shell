@@ -110,21 +110,13 @@ Item {
     component Img: Item {
         id: img
 
-        readonly property int status: root.isGif ? gifImage.status : cachedImage.status
+        property bool isGif: root.source.toLowerCase().endsWith(".gif")
 
         function update(): void {
-            if (root.isGif) {
-                const url = "file://" + root.source;
-                if (gifImage.source == url)
-                    root.current = this;
-                else
-                    gifImage.source = url;
-            } else {
-                if (cachedImage.path === root.source)
-                    root.current = this;
-                else
-                    cachedImage.path = root.source;
-            }
+            if (loader.item && loader.item.source === root.source)
+                root.current = this;
+            else
+                loader.item.source = root.source;
         }
 
         anchors.fill: parent
@@ -132,27 +124,42 @@ Item {
         opacity: 0
         scale: Wallpapers.showPreview ? 1 : 0.8
 
-        onStatusChanged: {
-            if (status === Image.Ready)
-                root.current = this;
+        Loader {
+            id: loader
+            anchors.fill: parent
+
+            sourceComponent: img.isGif ? gifComponent : imageComponent
+
+            onLoaded: {
+                item.source = root.source;
+            }
         }
 
-        CachingImage {
-            id: cachedImage
+        Component {
+            id: imageComponent
+            CachingImage {
+                anchors.fill: parent
+                fillMode: Image.PreserveAspectCrop
 
-            anchors.fill: parent
-            visible: !root.isGif
+                onStatusChanged: {
+                    if (status === Image.Ready)
+                        root.current = img;
+                }
+            }
         }
 
-        AnimatedImage {
-            id: gifImage
+        Component {
+            id: gifComponent
+            AnimatedImage {
+                anchors.fill: parent
+                fillMode: Image.PreserveAspectCrop
+                playing: true
 
-            anchors.fill: parent
-            visible: root.isGif
-            asynchronous: true
-            fillMode: Image.PreserveAspectCrop
-            speed: Config.background.gifSpeed
-            playing: visible && root.current === img
+                onStatusChanged: {
+                    if (status === Image.Ready)
+                        root.current = img;
+                }
+            }
         }
 
         states: State {
