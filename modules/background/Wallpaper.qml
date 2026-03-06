@@ -12,7 +12,7 @@ Item {
     id: root
 
     property string source: Wallpapers.current
-    property Image current: one
+    property Item current: one
 
     onSourceChanged: {
         if (!source)
@@ -97,6 +97,8 @@ Item {
         }
     }
 
+    readonly property bool isGif: root.source.toString().toLowerCase().endsWith(".gif")
+
     Img {
         id: one
     }
@@ -105,14 +107,23 @@ Item {
         id: two
     }
 
-    component Img: CachingImage {
+    component Img: Item {
         id: img
 
+        readonly property int status: root.isGif ? gifImage.status : cachedImage.status
+
         function update(): void {
-            if (path === root.source)
-                root.current = this;
-            else
-                path = root.source;
+            if (root.isGif) {
+                if (gifImage.source == root.source)
+                    root.current = this;
+                else
+                    gifImage.source = root.source;
+            } else {
+                if (cachedImage.path === root.source)
+                    root.current = this;
+                else
+                    cachedImage.path = root.source;
+            }
         }
 
         anchors.fill: parent
@@ -123,6 +134,24 @@ Item {
         onStatusChanged: {
             if (status === Image.Ready)
                 root.current = this;
+        }
+
+        CachingImage {
+            id: cachedImage
+
+            anchors.fill: parent
+            visible: !root.isGif
+        }
+
+        AnimatedImage {
+            id: gifImage
+
+            anchors.fill: parent
+            visible: root.isGif
+            asynchronous: true
+            fillMode: Image.PreserveAspectCrop
+            speed: Config.background.gifSpeed
+            playing: visible && root.current === img
         }
 
         states: State {
